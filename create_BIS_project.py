@@ -9,26 +9,35 @@ from googleapiclient.errors import HttpError
 
 SCOPES = ['https://www.googleapis.com/auth/drive.metadata', 'https://www.googleapis.com/auth/drive']
 
-target_folder_id = '1jLEX1BduFS9Jn_2nmHYD31Qq-7iMSMdp'
+# change the target folder ID to the parent folder you want to work in
+# target_folder_id = '1jLEX1BduFS9Jn_2nmHYD31Qq-7iMSMdp'
+target_folder_id = '18k8B9KzTMebdV-Nc3JGQiRsD6FUfUIMb'
+# folders where static files are stored
+templates = '1VA1v5riOhl76TXfl0Mcsmzc2bCQmjfdG'
+artifacts = '1MqXp_2TZAA_Daeb6oqIfZgEj62X1GEav'
 
 def create_folder(parent_folder_id, folder_name, service):
     folder_metadata = {
         'name': folder_name,
         'mimeType': 'application/vnd.google-apps.folder',
         'parents': [parent_folder_id]
+        
     }
     folder = service.files().create(body=folder_metadata, fields='id').execute()
     return folder['id']
 
 
-def create_nested_folders(parent_folder_id, folder_names, service):
+def create_nested_folders(parent_folder_id, folder_names, service,folder_color_rgb):
     nested_folder_ids = []
 
     for folder_name in folder_names:
+        # Retrieve the color for the current folder_name from the mapping
+        color = folder_color_rgb.get(folder_name, '#000000')  # Default to black if not found
         folder_metadata = {
             'name': folder_name,
             'mimeType': 'application/vnd.google-apps.folder',
-            'parents': [parent_folder_id]
+            'parents': [parent_folder_id],
+            'folderColorRgb': color
         }
         folder = service.files().create(body=folder_metadata, fields='id').execute()
         nested_folder_ids.append(folder['id'])
@@ -81,20 +90,70 @@ def main():
 
             print(f'Successfully created folder "{client_name}" with ID {folder_id}.')
 
-            nested_folder_names = ['BAM_Portal', 'ADMIN']
-            nested_folder_ids = create_nested_folders(folder_id, nested_folder_names, service)
+            bam_portal_name = client_name + ' BAM Portal'
+            nested_folder_names = [bam_portal_name, 'BIS ADMIN']
+            base_colors = {
+                'BIS ADMIN':"#d06b64",
+                bam_portal_name:"#9a9cff"
+            }
+
+            nested_folder_ids = create_nested_folders(folder_id, nested_folder_names, service, base_colors)
             
+            # make color mapping dict for main level nested folders
+            colorPalette = {
+                'Glossary':"#fa573c",
+                'Course Materials':"#ff7537",
+                # "#ffad46",
+                'Prospect Profiles':"#fad165",
+                # "#7bd148",
+                'Five Chords':"#16a765",
+                'Tools':"#92e1c0",
+                'Sales Playbook':"#9a9cff",
+                # "#9fc6e7",
+                'Conferences and Events':"#cd74e6",
+                'Weekly Email Archive':"#8f8f8f"
+                }
             for folder_name, nested_folder_id in zip(nested_folder_names, nested_folder_ids):
 
-                if folder_name in 'BAM_Portal':
+                if folder_name in bam_portal_name:
 
-                    nested_folder_names = ['1-Course Materials','2-Recommended Readings','3-Frameworks','4-Storytelling','5-Playbook','6-Intelligence Questions','7-Email Archive']
-                    nested_folder_ids = create_nested_folders(nested_folder_id, nested_folder_names, service)
-                    
-                elif folder_name in 'ADMIN':
+                    nested_folder_names = ['Glossary','Course Materials','Prospect Profiles','Five Chords','Tools','Sales Playbook','Conferences and Events', 'Weekly Email Archive']
+                    nested_folder_ids = create_nested_folders(nested_folder_id, nested_folder_names, service,colorPalette)
 
-                    nested_folder_names = ['Course Materials',"Readings",'Frameworks','Storytelling','Playbook','Intelligence Questions','Email Archive']
-                    nested_folder_ids = create_nested_folders(nested_folder_id, nested_folder_names, service)
+                    for folder_name, nested_folder_id in zip(nested_folder_names, nested_folder_ids):
+                        if folder_name in 'Tools':
+
+                            tools_folder_names = ['Frameworks','Articles','Intelligence Questions','Storytelling','Video Links']
+                            tool_colors = {
+                                'Frameworks':"#92e1c0",
+                                'Articles':"#92e1c0",
+                                'Intelligence Questions':"#92e1c0",
+                                'Storytelling':"#92e1c0",
+                                'Video Links':"#92e1c0"
+                            }
+                            nested_folder_ids = create_nested_folders(nested_folder_id, tools_folder_names, service, tool_colors)
+                            # for name in tools_folder_names:
+                            #     folder_id = create_folder(nested_folder_id, name, service)
+
+                elif folder_name in 'BIS ADMIN':
+
+                    nested_folder_names = ['Glossary','Course Materials','Prospect Profiles','Five Chords','Tools','Sales Playbook','Conferences and Events', 'Weekly Email Archive']
+                    nested_folder_ids = create_nested_folders(nested_folder_id, nested_folder_names, service,colorPalette)
+
+                    for folder_name, nested_folder_id in zip(nested_folder_names, nested_folder_ids):
+                        if folder_name in 'Tools':
+
+                            tools_folder_names = ['Frameworks','Articles','Intelligence Questions','Storytelling','Video Links']
+                            tool_colors = {
+                                'Frameworks':"#92e1c0",
+                                'Articles':"#92e1c0",
+                                'Intelligence Questions':"#92e1c0",
+                                'Storytelling':"#92e1c0",
+                                'Video Links':"#92e1c0"
+                            }
+                            nested_folder_ids = create_nested_folders(nested_folder_id, tools_folder_names, service, tool_colors)
+                            # for name in tools_folder_names:
+                            #     folder_id = create_folder(nested_folder_id, name, service)
 
                 print(f'Successfully created folder "{folder_name}" with ID {nested_folder_id} and subfolders.')
 
