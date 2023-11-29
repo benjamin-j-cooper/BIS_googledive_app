@@ -9,6 +9,8 @@ __pycache__/
 # word
 *.docx
 
+*.DS_Store
+
 # C extensions
 *.so
 
